@@ -13,40 +13,53 @@ board = [
 ]
 def removeValueFromColumn(value, column):
 
+	updated = False
 	for row in possibilities:
 		if len(row[column]) == 1:
 			continue
 		if value in row[column]:
 			row[column].remove(value)
+			updated = True
+
+	return updated
 
 def removeValueFromRow(value, row):
+	updated = False
 	for column in possibilities[row]:
 		if len(column) == 1:
 			continue
 		if value in column:
+			updated = True
 			column.remove(value)
 
+	return updated
+
 def removeValueFromSection(value, xSector, ySector):
-	#go from 3x to 3x + 2 and 3y to 3y + 2
+	updated = False 
 	rowIndex = 3 * ySector
 	columnIndex = 3 * xSector
 
 	for i in range(rowIndex, rowIndex + 3):
 		for j in range(columnIndex, columnIndex + 3):
 			if(len(possibilities[i][j]) > 1 and value in possibilities[i][j]):
-				#print possibilities
 				possibilities[i][j].remove(value)
+				updated = True
 
-	pass
-
+	return updated
+	
 def removePossibleValuesBasedOnBoard():
+	updated = False
+	updates = 0
 	for y in range(0, 9):
 		for x in range(0, 9):
 			value = board[y][x]
 			if(value != -1):
-				removeValueFromRow(value, y)
-				removeValueFromColumn(value, x)
-				removeValueFromSection(value, int(x/3), int(y/3))
+				updated = removeValueFromRow(value, y) or updated
+				updated = removeValueFromColumn(value, x) or updated
+				updated = removeValueFromSection(value, int(x/3), int(y/3)) or updated
+				updates += 1
+
+	return updated
 
 def updateBoardBasedOnPossibleValues():
 	update = False
@@ -124,7 +137,16 @@ def updateAllSections():
 		for j in range(0,3):
 			updateMade = updateMade or updateBasedOnAvailableSection(i,j)
 	return updateMade
-			
+
+def updateIteration():
+	updatesMade = removePossibleValuesBasedOnBoard() 
+	updatesMade = updateAllSections() or updatesMade 
+	updatesMade = updateAllRows() or updatesMade
+	updatesMade = updateAllColumns() or updatesMade
+	updatesMade = updateBoardBasedOnPossibleValues() or updatesMade
+
+	return updatesMade
+
 def updateBasedOnAvailableSection(xSection, ySection):
 	
 	updateMade = False
@@ -192,5 +214,4 @@ for x in range(0,9):
 	for y in range(0,9):
 		possibilities[x].append([])
 		possibilities[x][y] = possibleValues(y,x)
-
 
