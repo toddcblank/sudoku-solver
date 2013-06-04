@@ -1,15 +1,28 @@
 
+#"Hard" from Hemispheres, June 2013
+#board = [
+#[-1,-1, 3,-1, 4,-1, 5,-1,-1],
+#[-1,-1,-1, 9,-1,-1,-1,-1,-1],
+#[-1, 4,-1,-1, 6, 8,-1,-1,-1],
+#[-1, 2,-1,-1, 8,-1, 3, 9,-1],
+#[ 1,-1, 8,-1, 2,-1,-1,-1,-1],
+#[ 5,-1,-1,-1,-1, 6,-1,-1,-1],
+#[-1, 5,-1,-1, 3, 1,-1,-1, 8],
+#[-1, 8,-1,-1, 5,-1,-1,-1, 3],
+#[-1,-1, 4,-1,-1, 7,-1,-1, 6],
+#]
 
+#3. Medium from Hemispheres, June 2013
 board = [
-[ 9,-1,-1, 8,-1, 2, 4,-1,-1],
-[-1,-1,-1,-1,-1,-1,-1,-1, 6],
-[ 5,-1, 4,-1, 9,-1,-1,-1, 3],
-[-1,-1,-1, 2,-1,-1,-1, 4,-1],
-[-1, 5,-1,-1,-1,-1, 7,-1,-1],
-[-1, 7,-1,-1,-1, 6, 9,-1, 8],
-[-1, 2,-1,-1, 1, 4,-1, 6,-1],
-[-1,-1, 6, 5,-1,-1,-1,-1, 9],
-[-1,-1,-1,-1, 8,-1,-1,-1,-1]
+[-1, 2,-1,-1,-1,-1,-1, 8,-1],
+[ 4,-1, 7,-1,-1,-1,-1,-1,-1],
+[ 6,-1,-1, 5,-1, 1,-1,-1,-1],
+[-1,-1, 1, 2,-1, 8,-1,-1,-1],
+[-1, 9,-1,-1,-1, 4, 3,-1,-1],
+[-1,-1,-1,-1, 9, 3, 8,-1,-1],
+[-1,-1, 9,-1, 3, 6,-1,-1, 7],
+[-1,-1, 8,-1,-1, 9,-1,-1, 2],
+[-1,-1,-1, 4,-1,-1,-1,-1,-1],
 ]
 
 def removeValueFromSet(value, nodes):
@@ -52,7 +65,7 @@ def updateAllRows():
 
 	updateMade = False
 	for i in range(0,9):
-		updateMade = updateMade or updateBasedOnAvailableRow(i)
+		updateMade = updateBasedOnAvailability(getSetForRow(i)) or updateMade
 
 	return updateMade
 
@@ -70,58 +83,16 @@ def updateBasedOnAvailability(nodes):
 
 		if availableSquares == 1:
 			if len(nodes[candidateSquare]) > 1:
-				print "found only one square in set for %d" % i
 				updateMade = True
-				nodes[candidateSquare] = []
+				del nodes[candidateSquare][0:]
 				nodes[candidateSquare].append(i)
 	
-	return updateMade
-
-def updateBasedOnAvailableRow(row):
-	updateMade = False
-	#updates based on a number only being available to one square in the row
-	for i in range(1,10):
-		availableSquares = 0
-		columnIndex = 0
-		candidateSquare = 0
-		for column in possibilities[row]:
-			if i in column:
-				availableSquares += 1
-				candidateSquare = columnIndex	
-			columnIndex += 1
-
-		if availableSquares == 1:
-			if board[row][candidateSquare] == -1:
-				board[row][candidateSquare] = i
-				updateMade = True
-
 	return updateMade
 
 def updateAllColumns():
 	updateMade = False
 	for i in range(0,9):
-		#updateMade = updateMade or updateBasedOnAvailableColumn(i)
 		updateMade = updateBasedOnAvailability(getSetForColumn(i)) or updateMade
-
-	return updateMade
-
-def updateBasedOnAvailableColumn(column):
-	updateMade = False
-
-	for i in range(1,10):
-		availableSquares = 0
-		rowIndex = -1
-		candidateSquare = 0
-		for row in possibilities:
-			rowIndex += 1
-			if i in row[column]:
-				availableSquares += 1
-				candidateSquare = rowIndex
-
-		if availableSquares == 1:
-			if board[candidateSquare][column] == -1:
-				board[candidateSquare][column] = i
-				updateMade = True
 
 	return updateMade
 
@@ -129,7 +100,7 @@ def updateAllSections():
 	updateMade = False
 	for i in range(0,3):
 		for j in range(0,3):
-			updateMade = updateMade or updateBasedOnAvailableSection(i,j)
+			updateMade = updateBasedOnAvailability(getSetForSection(i,j))
 	return updateMade
 
 def updateIteration():
@@ -138,6 +109,9 @@ def updateIteration():
 	updatesMade = updateAllRows() or updatesMade
 	updatesMade = updateAllColumns() or updatesMade
 	updatesMade = updateBoardBasedOnPossibleValues() or updatesMade
+	updatesMade = findEqualNodes() or updatesMade
+
+	printBoard()
 
 	return updatesMade
 
@@ -165,45 +139,35 @@ def getSetForSection(xSection, ySection):
 	
 	return nodes
 
-def findPairsInRows():
-	rowindex = -1
-	for row in possibilities:
-		rowindex += 1
-		uniquePossibilities = []
-		for cell in row:
-			if cell in uniquePossibilities:
-				print "found cell that is duplicated in row %d" % rowindex
-				print cell
-			else:
-				uniquePossibilities.append(cell)
 
-def updateBasedOnAvailableSection(xSection, ySection):
-	
-	updateMade = False
+def findEqualNodes():
+	update = False
+	for i in range(0,9):
+		update = findPairsInNodes(getSetForRow(i)) or update
+		update = findPairsInNodes(getSetForColumn(i)) or update
 
-	#updates based on a number only being available to 1 square in the section
-	for i in range(1,10):
-		rowStart = ySection * 3
-		availableSquares = 0
-		candidateSquareY = ySection * 3	
-		candidateSquareX = xSection * 3
-		rowIndex = ySection * 3
-		for row in possibilities[ySection * 3:ySection * 3 + 3]:
-			columnIndex = xSection * 3
-			for column in row[xSection * 3:xSection *3 + 3]:
-				if i in column:
-					availableSquares += 1
-					candidateSquareY = rowIndex
-					candidateSquareX = columnIndex
-				columnIndex += 1		
-			rowIndex += 1
+	for i in range(0,3):
+		for j in range(0,3):
+			update = findPairsInNodes(getSetForSection(i,j)) or update
 
-		if availableSquares == 1:
-			if board[candidateSquareY][candidateSquareX] == -1:
-				updateMade = True
-				board[candidateSquareY][candidateSquareX] = i
+	return update
 
-	return updateMade	
+def findPairsInNodes(nodes):
+	update = False
+	index = 0
+	for cell in nodes:
+		if len(cell) > 1 and nodes.count(cell) == len(cell):
+			#remove values from non-equal cellsA
+			for checkCell in nodes:
+				if checkCell == cell:
+					continue
+				else:
+					for value in cell:
+						if value in checkCell:
+							update = True
+							checkCell.remove(value)
+
+	return update
 
 def possibleValues(y, x):
 	if(board[x][y] != -1):
